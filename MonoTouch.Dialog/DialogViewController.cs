@@ -20,7 +20,7 @@ namespace MonoTouch.Dialog
 	public class DialogViewController : UITableViewController
 	{
 		public UITableViewStyle Style = UITableViewStyle.Grouped;
-		UISearchBar searchBar;
+		protected UISearchBar searchBar;
 		UITableView tableView;
 		RefreshTableHeaderView refreshView;
 		RootElement root;
