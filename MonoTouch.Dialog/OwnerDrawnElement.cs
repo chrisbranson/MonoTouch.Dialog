@@ -69,6 +69,7 @@ namespace MonoTouch.Dialog
 					if (view == null)
 					{
 						view = new OwnerDrawnCellView (value);
+						view.BackgroundColor = UIColor.Clear;
 						ContentView.Add (view);
 					}
 					else
