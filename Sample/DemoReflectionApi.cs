@@ -20,6 +20,9 @@ namespace Sample
 				
 	[Section ("Account", "Your credentials")]
 		
+		[Entry ("Server URL", UIKeyboardType.Url, UITextAutocapitalizationType.None, UITextAutocorrectionType.No)]
+		public string ServerUrl;
+		
 		[Entry ("Enter your login name")]
 		public string Login;
 		

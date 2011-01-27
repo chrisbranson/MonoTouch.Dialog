@@ -976,6 +976,8 @@ namespace MonoTouch.Dialog
 		/// urls, phones.
 		/// </summary>
 		public UIKeyboardType KeyboardType = UIKeyboardType.Default;
+		public UITextAutocapitalizationType CapitalizationType = UITextAutocapitalizationType.Sentences;
+		public UITextAutocorrectionType CorrectionType = UITextAutocorrectionType.Default;
 		
 		static NSString ekey = new NSString ("EntryElement");
 		bool isPassword;
@@ -1110,6 +1112,8 @@ namespace MonoTouch.Dialog
 				};
 			}
 			entry.KeyboardType = KeyboardType;
+			entry.AutocapitalizationType = CapitalizationType;
+			entry.AutocorrectionType = CorrectionType;
 			
 			cell.TextLabel.Text = Caption;
 			cell.ContentView.AddSubview (entry);

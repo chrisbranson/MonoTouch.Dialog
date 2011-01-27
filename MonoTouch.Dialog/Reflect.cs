@@ -27,9 +27,20 @@ namespace MonoTouch.Dialog
 		{
 			Placeholder = placeholder;
 		}
+		
+		public EntryAttribute (string placeholder, UIKeyboardType keyboardType,
+		                 UITextAutocapitalizationType autocapitalizationType, UITextAutocorrectionType autocorrectionType)
+		{
+			Placeholder = placeholder;
+			KeyboardType = keyboardType;
+			CapitalizationType = autocapitalizationType;
+			CorrectionType = autocorrectionType;
+		}
 
 		public string Placeholder;
 		public UIKeyboardType KeyboardType;
+		public UITextAutocapitalizationType CapitalizationType;
+		public UITextAutocorrectionType CorrectionType;
 	}
 
 	[AttributeUsage (AttributeTargets.Field | AttributeTargets.Property, Inherited=false)]
@@ -275,7 +286,7 @@ namespace MonoTouch.Dialog
 					if (pa != null)
 						element = new EntryElement (caption, pa.Placeholder, value, true);
 					else if (ea != null)
-						element = new EntryElement (caption, ea.Placeholder, value) { KeyboardType = ea.KeyboardType };
+						element = new EntryElement (caption, ea.Placeholder, value) { KeyboardType = ea.KeyboardType, CapitalizationType = ea.CapitalizationType, CorrectionType = ea.CorrectionType };
 					else if (multi)
 						element = new MultilineElement (caption, value);
 					else if (html != null)
