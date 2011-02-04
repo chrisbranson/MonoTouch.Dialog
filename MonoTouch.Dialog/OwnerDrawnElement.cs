@@ -19,10 +19,16 @@ namespace MonoTouch.Dialog
 			get;set;	
 		}
 		
+		public UIColor BackgroundColor
+		{
+			get;set;
+		}
+		
 		public OwnerDrawnElement (UITableViewCellStyle style, string cellIdentifier) : base(null)
 		{
 			this.CellReuseIdentifier = cellIdentifier;
 			this.Style = style;
+			this.BackgroundColor = UIColor.Clear;
 		}
 		
 		public float GetHeight (UITableView tableView, NSIndexPath indexPath)
@@ -69,7 +75,7 @@ namespace MonoTouch.Dialog
 					if (view == null)
 					{
 						view = new OwnerDrawnCellView (value);
-						view.BackgroundColor = UIColor.Clear;
+						view.BackgroundColor = Element.BackgroundColor;
 						ContentView.Add (view);
 					}
 					else
