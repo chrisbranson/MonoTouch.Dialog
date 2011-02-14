@@ -8,6 +8,11 @@
 //
 // Code licensed under the MIT X11 license
 //
+// TODO: StyledStringElement: merge with multi-line?
+// TODO: StyledStringElement: add image scaling features?
+// TODO: StyledStringElement: add sizing based on image size?
+// TODO: Move image rendering to StyledImageElement?
+//
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -16,6 +21,7 @@ using MonoTouch.UIKit;
 using MonoTouch.CoreGraphics;
 using System.Drawing;
 using MonoTouch.Foundation;
+using MonoTouch.Dialog.Utilities;
 
 namespace MonoTouch.Dialog
 {
@@ -96,6 +102,17 @@ namespace MonoTouch.Dialog
 		/// </param>
 		public virtual void Selected (DialogViewController dvc, UITableView tableView, NSIndexPath path)
 		{
+		}
+
+		/// <summary>
+		/// If the cell is attached will return the immediate RootElement
+		/// </summary>
+		public RootElement GetImmediateRootElement ()
+		{
+				var section = Parent as Section;
+				if (section == null)
+					return null;
+				return section.Parent as RootElement;
 		}
 		
 		/// <summary>
@@ -512,7 +529,7 @@ namespace MonoTouch.Dialog
 	/// </summary>
 	public class StringElement : Element {
 		static NSString skey = new NSString ("StringElement");
-                static NSString skeyvalue = new NSString ("StringElementValue");
+		static NSString skeyvalue = new NSString ("StringElementValue");
 		public UITextAlignment Alignment = UITextAlignment.Left;
 		public string Value;
 		
@@ -565,46 +582,177 @@ namespace MonoTouch.Dialog
 			return (Value != null ? Value.IndexOf (text, StringComparison.CurrentCultureIgnoreCase) != -1: false) || base.Matches (text);
 		}
 	}
-
+	
 	/// <summary>
-	///   A version of the StringElement that can be styled with a number of options.
+	///   A version of the StringElement that can be styled with a number of formatting 
+	///   options and can render images or background images either from UIImage parameters 
+	///   or by downloading them from the net.
 	/// </summary>
-	public class StyledStringElement : StringElement {
-		static NSString skey = new NSString ("StyledStringElement");
-
-		public StyledStringElement (string caption) : base (caption) {}
-		public StyledStringElement (string caption, string value) : base (caption, value) {}
-		public StyledStringElement (string caption, NSAction tapped) : base (caption, tapped) {}
+	public class StyledStringElement : StringElement, IImageUpdated, IColorizeBackground {
+		static NSString [] skey = { new NSString (".1"), new NSString (".2"), new NSString (".3"), new NSString (".4") };
 		
+		public StyledStringElement (string caption) : base (caption) {}
+		public StyledStringElement (string caption, NSAction tapped) : base (caption, tapped) {}
+		public StyledStringElement (string caption, string value) : base (caption, value) 
+		{
+			style = UITableViewCellStyle.Value1;	
+		}
+		public StyledStringElement (string caption, string value, UITableViewCellStyle style) : base (caption, value) 
+		{ 
+			this.style = style;
+		}
+		
+		UITableViewCellStyle style;
 		public UIFont Font;
 		public UIColor TextColor;
-		public UIColor BackgroundColor;
 		public UILineBreakMode LineBreakMode = UILineBreakMode.WordWrap;
 		public int Lines = 1;
 		public UITableViewCellAccessory Accessory = UITableViewCellAccessory.None;
 		
+		// To keep the size down for a StyleStringElement, we put all the image information
+		// on a separate structure, and create this on demand.
+		ExtraInfo extraInfo;
+		
+		class ExtraInfo {
+			public UIImage Image; // Maybe add BackgroundImage?
+			public UIColor BackgroundColor, DetailColor;
+			public Uri Uri, BackgroundUri;
+		}
+
+		ExtraInfo OnImageInfo ()
+		{
+			if (extraInfo == null)
+				extraInfo = new ExtraInfo ();
+			return extraInfo;
+		}
+		
+		// Uses the specified image (use this or ImageUri)
+		public UIImage Image {
+			get {
+				return extraInfo == null ? null : extraInfo.Image;
+			}
+			set {
+				OnImageInfo ().Image = value;
+				extraInfo.Uri = null;
+			}
+		}
+		
+		// Loads the image from the specified uri (use this or Image)
+		public Uri ImageUri {
+			get {
+				return extraInfo == null ? null : extraInfo.Uri;
+			}
+			set {
+				OnImageInfo ().Uri = value;
+				extraInfo.Image = null;
+			}
+		}
+		
+		// Background color for the cell (alternative: BackgroundUri)
+		public UIColor BackgroundColor {
+			get {
+				return extraInfo == null ? null : extraInfo.BackgroundColor;
+			}
+			set {
+				OnImageInfo ().BackgroundColor = value;
+				extraInfo.BackgroundUri = null;
+			}
+		}
+		
+		public UIColor DetailColor {
+			get {
+				return extraInfo == null ? null : extraInfo.DetailColor;
+			}
+			set {
+				OnImageInfo ().DetailColor = value;
+			}
+		}
+		
+		// Uri for a Background image (alternatiev: BackgroundColor)
+		public Uri BackgroundUri {
+			get {
+				return extraInfo == null ? null : extraInfo.BackgroundUri;
+			}
+			set {
+				OnImageInfo ().BackgroundUri = value;
+				extraInfo.BackgroundColor = null;
+			}
+		}
+			
 		public override UITableViewCell GetCell (UITableView tv)
 		{
-			var cell = tv.DequeueReusableCell (skey);
+			var cell = tv.DequeueReusableCell (skey [(int)style]);
 			if (cell == null){
-				cell = new UITableViewCell (Value == null ? UITableViewCellStyle.Default : UITableViewCellStyle.Value1, skey);
+				cell = new UITableViewCell (style, skey [(int)style]);
 				cell.SelectionStyle = UITableViewCellSelectionStyle.Blue;
 			}
 			cell.Accessory = Accessory;
 			var tl = cell.TextLabel;
 			tl.Text = Caption;
 			tl.TextAlignment = Alignment;
-			tl.TextColor = TextColor == null ? UIColor.Black : TextColor;
-			tl.BackgroundColor = BackgroundColor == null ? UIColor.White : BackgroundColor;
-			tl.Font = Font == null ? UIFont.SystemFontOfSize (14) : Font;
+			tl.TextColor = TextColor ?? UIColor.Black;
+			tl.Font = Font ?? UIFont.BoldSystemFontOfSize (17);
 			tl.LineBreakMode = LineBreakMode;
-			tl.Lines = 0;			
+			tl.Lines = 0;	
+			
 			// The check is needed because the cell might have been recycled.
 			if (cell.DetailTextLabel != null)
 				cell.DetailTextLabel.Text = Value == null ? "" : Value;
 			
+			if (extraInfo == null){
+				cell.ContentView.BackgroundColor = null;
+				tl.BackgroundColor = null;
+			} else {
+				var imgView = cell.ImageView;
+				UIImage img;
+				
+				if (extraInfo.Uri != null)
+					img = ImageLoader.RequestImage (extraInfo.Uri, this);
+				else if (extraInfo.Image != null)
+					img = extraInfo.Image;
+				else 
+					img = null;
+				imgView.Image = img;
+				
+				if (cell.DetailTextLabel != null)
+					cell.DetailTextLabel.TextColor = extraInfo.DetailColor ?? UIColor.Black;
+			}
 			return cell;
-		}		
+		}	
+	
+		void ClearBackground (UITableViewCell cell)
+		{
+			cell.BackgroundColor = UIColor.White;
+			cell.TextLabel.BackgroundColor = UIColor.Clear;
+		}
+
+		void IColorizeBackground.WillDisplay (UITableView tableView, UITableViewCell cell, NSIndexPath indexPath)
+		{
+			if (extraInfo == null){
+				ClearBackground (cell);
+				return;
+			}
+			
+			if (extraInfo.BackgroundColor != null){
+				cell.BackgroundColor = extraInfo.BackgroundColor;
+				cell.TextLabel.BackgroundColor = UIColor.Clear;
+			} else if (extraInfo.BackgroundUri != null){
+				var img = ImageLoader.RequestImage (extraInfo.BackgroundUri, this);
+				cell.BackgroundColor = img == null ? UIColor.White : UIColor.FromPatternImage (img);
+				cell.TextLabel.BackgroundColor = UIColor.Clear;
+			} else 
+				ClearBackground (cell);
+		}
+
+		void IImageUpdated.UpdatedImage (Uri uri)
+		{
+			if (uri == null || extraInfo == null)
+				return;
+			var root = GetImmediateRootElement ();
+			if (root == null || root.TableView == null)
+				return;
+			root.TableView.ReloadRows (new NSIndexPath [] { IndexPath }, UITableViewRowAnimation.None);
+		}	
 	}
 	
 	public class StyledMultilineElement : StyledStringElement, IElementSizing {
@@ -615,8 +763,9 @@ namespace MonoTouch.Dialog
 		public virtual float GetHeight (UITableView tableView, NSIndexPath indexPath)
 		{
 			SizeF size = new SizeF (280, float.MaxValue);
-			using (var font = UIFont.FromName ("Helvetica", 17f))
-				return tableView.StringSize (Caption, font, size, LineBreakMode).Height;
+			
+			var font = Font ?? UIFont.SystemFontOfSize (14);
+			return tableView.StringSize (Caption, font, size, LineBreakMode).Height;
 		}
 	}
 	
@@ -666,8 +815,22 @@ namespace MonoTouch.Dialog
 		
 	}
 	
+	/// <summary>
+	///   This interface is implemented by Element classes that will have
+	///   different heights
+	/// </summary>
 	public interface IElementSizing {
 		float GetHeight (UITableView tableView, NSIndexPath indexPath);
+	}
+	
+	/// <summary>
+	///   This interface is implemented by Elements that needs to update
+	///   their cells Background properties just before they are displayed
+	///   to the user.   This is an iOS 3 requirement to properly render
+	///   a cell.
+	/// </summary>
+	public interface IColorizeBackground {
+		void WillDisplay (UITableView tableView, UITableViewCell cell, NSIndexPath indexPath);
 	}
 	
 	public class MultilineElement : StringElement, IElementSizing {
@@ -1799,6 +1962,11 @@ namespace MonoTouch.Dialog
 		public Func<RootElement, UIViewController> createOnSelected;
 		internal UITableView TableView;
 		
+		// This is used to indicate that we need the DVC to dispatch calls to
+		// WillDisplayCell so we can prepare the color of the cell before 
+		// display
+		public bool NeedColorUpdate;
+		
 		/// <summary>
 		///  Initializes a RootSection with a caption
 		/// </summary>
@@ -1919,6 +2087,8 @@ namespace MonoTouch.Dialog
 						re.RadioIdx = current++;
 					if (UnevenRows == false && e is IElementSizing)
 						UnevenRows = true;
+					if (NeedColorUpdate == false && e is IColorizeBackground)
+						NeedColorUpdate = true;
 				}
 			}
 		}
