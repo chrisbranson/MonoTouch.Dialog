@@ -11,7 +11,7 @@
 // TODO: StyledStringElement: merge with multi-line?
 // TODO: StyledStringElement: add image scaling features?
 // TODO: StyledStringElement: add sizing based on image size?
-// TODO: Move image rendering to StyledImageElement?
+// TODO: Move image rendering to StyledImageElement, reason to do this: the image loader would only be imported in this case, linked out otherwise
 //
 using System;
 using System.Collections;
@@ -113,6 +113,31 @@ namespace MonoTouch.Dialog
 				if (section == null)
 					return null;
 				return section.Parent as RootElement;
+		}
+		
+		/// <summary>
+		/// Returns the UITableView associated with this element, or null if this cell is not currently attached to a UITableView
+		/// </summary>
+		public UITableView GetContainerTableView ()
+		{
+			var root = GetImmediateRootElement ();
+			if (root == null)
+				return null;
+			return root.TableView;
+		}
+		
+		/// <summary>
+		/// Returns the currently active UITableViewCell for this element, or null if the element is not currently visible
+		/// </summary>
+		public UITableViewCell GetActiveCell ()
+		{
+			var tv = GetContainerTableView ();
+			if (tv == null)
+				return null;
+			var path = IndexPath;
+			if (path == null)
+				return null;
+			return tv.CellAt (path);
 		}
 		
 		/// <summary>
@@ -679,13 +704,25 @@ namespace MonoTouch.Dialog
 			}
 		}
 			
+		protected virtual string GetKey (int style)
+		{
+			return skey [style];
+		}
+		
 		public override UITableViewCell GetCell (UITableView tv)
 		{
-			var cell = tv.DequeueReusableCell (skey [(int)style]);
+			var key = GetKey ((int) style);
+			var cell = tv.DequeueReusableCell (key);
 			if (cell == null){
-				cell = new UITableViewCell (style, skey [(int)style]);
+				cell = new UITableViewCell (style, key);
 				cell.SelectionStyle = UITableViewCellSelectionStyle.Blue;
 			}
+			PrepareCell (cell);
+			return cell;
+		}
+		
+		void PrepareCell (UITableViewCell cell)
+		{
 			cell.Accessory = Accessory;
 			var tl = cell.TextLabel;
 			tl.Text = Caption;
@@ -707,7 +744,7 @@ namespace MonoTouch.Dialog
 				UIImage img;
 				
 				if (extraInfo.Uri != null)
-					img = ImageLoader.RequestImage (extraInfo.Uri, this);
+					img = ImageLoader.DefaultRequestImage (extraInfo.Uri, this);
 				else if (extraInfo.Image != null)
 					img = extraInfo.Image;
 				else 
@@ -717,7 +754,6 @@ namespace MonoTouch.Dialog
 				if (cell.DetailTextLabel != null)
 					cell.DetailTextLabel.TextColor = extraInfo.DetailColor ?? UIColor.Black;
 			}
-			return cell;
 		}	
 	
 		void ClearBackground (UITableViewCell cell)
@@ -737,7 +773,7 @@ namespace MonoTouch.Dialog
 				cell.BackgroundColor = extraInfo.BackgroundColor;
 				cell.TextLabel.BackgroundColor = UIColor.Clear;
 			} else if (extraInfo.BackgroundUri != null){
-				var img = ImageLoader.RequestImage (extraInfo.BackgroundUri, this);
+				var img = ImageLoader.DefaultRequestImage (extraInfo.BackgroundUri, this);
 				cell.BackgroundColor = img == null ? UIColor.White : UIColor.FromPatternImage (img);
 				cell.TextLabel.BackgroundColor = UIColor.Clear;
 			} else 
