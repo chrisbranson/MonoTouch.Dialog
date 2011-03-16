@@ -284,7 +284,7 @@ namespace MonoTouch.Dialog
 					
 					string value = (string) GetValue (mi, o);
 					if (pa != null)
-						element = new EntryElement (caption, pa.Placeholder, value, true);
+						element = new EntryElement (caption, pa.Placeholder, value, true) { CapitalizationType = UITextAutocapitalizationType.None, CorrectionType = UITextAutocorrectionType.No }; 
 					else if (ea != null)
 						element = new EntryElement (caption, ea.Placeholder, value) { KeyboardType = ea.KeyboardType, CapitalizationType = ea.CapitalizationType, CorrectionType = ea.CorrectionType };
 					else if (multi)
