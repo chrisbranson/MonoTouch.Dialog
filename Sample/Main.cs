@@ -45,7 +45,9 @@ namespace Sample
 				},
 				new Section ("Container features"){
 					new StringElement ("Pull to Refresh", DemoRefresh),
-					new StringElement ("Headers and Footers", DemoHeadersFooters)
+					new StringElement ("Headers and Footers", DemoHeadersFooters),
+					new StringElement ("Root Style", DemoContainerStyle),
+					new StringElement ("Index sample", DemoIndex),
 				},
 				new Section ("Auto-mapped", footer){
 					new StringElement ("Reflection API", DemoReflectionApi)

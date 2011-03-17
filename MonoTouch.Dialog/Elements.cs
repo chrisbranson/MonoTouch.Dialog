@@ -531,12 +531,17 @@ namespace MonoTouch.Dialog
 			};
 			web.LoadStarted += delegate {
 				NetworkActivity = true;
+				var indicator = new UIActivityIndicatorView(UIActivityIndicatorViewStyle.White);
+				vc.NavigationItem.RightBarButtonItem = new UIBarButtonItem(indicator);
+				indicator.StartAnimating();
 			};
 			web.LoadFinished += delegate {
 				NetworkActivity = false;
+				vc.NavigationItem.RightBarButtonItem = null;
 			};
 			web.LoadError += (webview, args) => {
 				NetworkActivity = false;
+				vc.NavigationItem.RightBarButtonItem = null;
 				if (web != null)
 					web.LoadHtmlString (String.Format ("<html><center><font size=+5 color='red'>An error occurred:<br>{0}</font></center></html>", args.Error.LocalizedDescription), null);
 			};
@@ -1990,7 +1995,7 @@ namespace MonoTouch.Dialog
 	///    Sections are added by calling the Add method which supports the
 	///    C# 4.0 syntax to initialize a RootElement in one pass.
 	/// </remarks>
-	public class RootElement : Element, IEnumerable {
+	public class RootElement : Element, IEnumerable, IEnumerable<Section> {
 		static NSString rkey = new NSString ("RootElement");
 		int summarySection, summaryElement;
 		internal Group group;
@@ -2303,7 +2308,13 @@ namespace MonoTouch.Dialog
 		/// <returns>
 		/// A <see cref="IEnumerator"/>
 		/// </returns>
-		public IEnumerator GetEnumerator ()
+		IEnumerator IEnumerable.GetEnumerator ()
+		{
+			foreach (var s in Sections)
+				yield return s;
+		}
+		
+		IEnumerator<Section> IEnumerable<Section>.GetEnumerator ()
 		{
 			foreach (var s in Sections)
 				yield return s;
