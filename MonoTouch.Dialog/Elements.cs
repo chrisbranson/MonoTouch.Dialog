@@ -1184,7 +1184,7 @@ namespace MonoTouch.Dialog
 		public UITextAutocorrectionType CorrectionType = UITextAutocorrectionType.Default;
 		
 		static NSString ekey = new NSString ("EntryElement");
-		bool isPassword;
+		bool isPassword, becomeResponder;
 		UITextField entry;
 		string placeholder;
 		static UIFont font = UIFont.BoldSystemFontOfSize (17);
@@ -1292,8 +1292,10 @@ namespace MonoTouch.Dialog
 					foreach (var e in (Parent as Section).Elements){
 						if (e == this)
 							focus = this;
-						else if (focus != null && e is EntryElement)
+						else if (focus != null && e is EntryElement){
 							focus = e as EntryElement;
+							break;
+						}
 					}
 					if (focus != this)
 						focus.entry.BecomeFirstResponder ();
@@ -1315,6 +1317,10 @@ namespace MonoTouch.Dialog
 					entry.ReturnKeyType = returnType;
 				};
 			}
+			if (becomeResponder){
+				entry.BecomeFirstResponder ();
+				becomeResponder = false;
+			}
 			entry.KeyboardType = KeyboardType;
 			entry.AutocapitalizationType = CapitalizationType;
 			entry.AutocorrectionType = CorrectionType;
@@ -1324,6 +1330,9 @@ namespace MonoTouch.Dialog
 			return cell;
 		}
 		
+		/// <summary>
+		///  Copies the value from the currently entry UIView to the Value property and raises the Changed event if necessary.
+		/// </summary>
 		public void FetchValue ()
 		{
 			if (entry == null)
@@ -1351,7 +1360,36 @@ namespace MonoTouch.Dialog
 		{
 			return (Value != null ? Value.IndexOf (text, StringComparison.CurrentCultureIgnoreCase) != -1: false) || base.Matches (text);
 		}
-	}
+		
+		/// <summary>
+		/// Makes this cell the first responder (get the focus)
+		/// </summary>
+		/// <param name="animated">
+		/// Whether scrolling to the location of this cell should be animated
+		/// </param>
+		public void BecomeFirstResponder (bool animated)
+		{
+			becomeResponder = true;
+			var tv = GetContainerTableView ();
+			if (tv == null)
+				return;
+			tv.ScrollToRow (IndexPath, UITableViewScrollPosition.Middle, animated);
+			if (entry != null){
+				entry.BecomeFirstResponder ();
+				becomeResponder = false;
+			}
+		}
+
+		public void ResignFirstResponder (bool animated)
+		{
+			becomeResponder = false;
+			var tv = GetContainerTableView ();
+			if (tv == null)
+				return;
+			tv.ScrollToRow (IndexPath, UITableViewScrollPosition.Middle, animated);
+			if (entry != null)
+				entry.ResignFirstResponder ();
+        }	}
 	
 	public class DateTimeElement : StringElement {
 		public DateTime DateValue;
