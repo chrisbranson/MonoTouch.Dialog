@@ -1188,9 +1188,20 @@ namespace MonoTouch.Dialog
 		/// this to use this for numeric input, email addressed,
 		/// urls, phones.
 		/// </summary>
-		public UIKeyboardType KeyboardType = UIKeyboardType.Default;
+		public UIKeyboardType keyboardType = UIKeyboardType.Default;
 		public UITextAutocapitalizationType CapitalizationType = UITextAutocapitalizationType.Sentences;
 		public UITextAutocorrectionType CorrectionType = UITextAutocorrectionType.Default;
+
+		public UIKeyboardType KeyboardType {
+			get {
+				return keyboardType;
+			}
+			set {
+				keyboardType = value;
+				if (entry != null)
+					entry.KeyboardType = value;
+			}
+		}
 		
 		static NSString ekey = new NSString ("EntryElement");
 		bool isPassword, becomeResponder;
